@@ -1,6 +1,7 @@
 import itertools
 from operator import itemgetter
 
+from openpyxl import Workbook
 from pdfminer.pdftypes import PDFObjRef
 from pdfminer.psparser import PSLiteral
 from pdfminer.utils import PDFDocEncoding
@@ -10,6 +11,21 @@ DEFAULT_Y_TOLERANCE = 3
 DEFAULT_X_DENSITY = 7.25
 DEFAULT_Y_DENSITY = 13
 
+
+def complex2xlsx(cells, wb=None, path=None):
+    if wb is None:
+        wb = Workbook()
+    ws = wb.create_sheet()
+    for cell in cells:
+        start_cell = ws.cell(row=cell["start_row"],column=cell["start_col"])
+        start_cell.value = cell["text"]
+        if cell["start_row"] != cell["end_row"] or cell["start_col"] != cell["end_col"]:
+            ws.merge_cells(start_row=cell["start_row"], start_column=cell["start_col"],
+                           end_row=cell["end_row"], end_column=cell["end_col"])
+    if path is None:
+        return ws
+    else:
+        wb.save(path)
 
 def cluster_list(xs, tolerance=0):
     if tolerance == 0:

@@ -354,6 +354,69 @@ class Table(object):
         )
 
     @property
+    def cell_objs(self):
+        xconors = sorted(set(itertools.chain(map(itemgetter(0), self.cells), map(itemgetter(2), self.cells))))
+        yconors = sorted(set(itertools.chain(map(itemgetter(1), self.cells), map(itemgetter(3), self.cells))))
+
+        cell_objs = []
+        _sorted = sorted(self.cells, key=itemgetter(1, 0))
+        for cell in _sorted:
+            start_x, end_x = cell[0], cell[2]
+            arr = []
+            for i, xconor in enumerate(xconors):
+                if xconor >= start_x and xconor <= end_x:
+                    arr.append(i)
+            start_col = min(arr)
+            end_col = max(arr)
+            start_y, end_y = cell[1], cell[3]
+            arr = []
+            for i, yconor in enumerate(yconors):
+                if yconor >= start_y and yconor <= end_y:
+                    arr.append(i)
+            start_row = min(arr)
+            end_row = max(arr)
+            # 从1开始索引
+            cell_objs.append(dict(
+                start_row=start_row + 1, end_row=end_row,
+                start_col=start_col + 1, end_col=end_col,
+                cell=cell,
+            ))
+        return cell_objs
+
+    def extract_complex(
+        self,
+        x_tolerance=utils.DEFAULT_X_TOLERANCE,
+        y_tolerance=utils.DEFAULT_Y_TOLERANCE,
+    ):
+
+        chars = self.page.chars
+
+        def char_in_bbox(char, bbox):
+            v_mid = (char["top"] + char["bottom"]) / 2
+            h_mid = (char["x0"] + char["x1"]) / 2
+            x0, top, x1, bottom = bbox
+            return (
+                (h_mid >= x0) and (h_mid < x1) and (v_mid >= top) and (v_mid < bottom)
+            )
+        cell_objs = self.cell_objs
+        for cell_obj in cell_objs:
+            cell_chars = [
+                char for char in chars if char_in_bbox(char, cell_obj["cell"])
+            ]
+
+            if len(cell_chars):
+                cell_text = utils.extract_text(
+                    cell_chars,
+                    x_tolerance=x_tolerance,
+                    y_tolerance=y_tolerance,
+                ).strip()
+            else:
+                cell_text = ""
+            cell_obj["text"] = cell_text
+
+        return cell_objs
+
+    @property
     def rows(self):
         _sorted = sorted(self.cells, key=itemgetter(1, 0))
         xs = list(sorted(set(map(itemgetter(0), self.cells))))

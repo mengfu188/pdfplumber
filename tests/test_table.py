@@ -7,6 +7,7 @@ import pytest
 
 import pdfplumber
 from pdfplumber import table
+from openpyxl import Workbook
 
 logging.disable(logging.ERROR)
 
@@ -146,6 +147,16 @@ class Test(unittest.TestCase):
             assert len(tables[0]) == 8
             assert len(tables[1]) == 11
             assert len(tables[2]) == 2
+
+    def test_complex(self):
+        for filename in ["issue-336-example.pdf", "issue-192-example.pdf"]:
+            path = os.path.join(HERE, "pdfs", filename)
+            with pdfplumber.open(path) as pdf:
+                complexs = pdf.pages[0].extract_complexs()
+                wb = Workbook()
+                for complex in complexs:
+                    pdfplumber.utils.complex2xlsx(complex, wb)
+                wb.save(filename + ".xlsx")
 
     def test_issue_466_mixed_strategy(self):
         """

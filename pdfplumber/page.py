@@ -220,6 +220,40 @@ class Page(Container):
     def find_tables(self, table_settings={}):
         return TableFinder(self, table_settings).tables
 
+    def extract_complexs(self, table_settings={}):
+        table_settings = TableFinder.resolve_table_settings(table_settings)
+        tables = self.find_tables(table_settings)
+
+        extract_kwargs = {
+            k: table_settings["text_" + k]
+            for k in ["x_tolerance", "y_tolerance"]
+            if "text_" + k in table_settings
+        }
+
+        return [table.extract_complex(**extract_kwargs) for table in tables]
+
+    def extract_complex(self, table_settings={}):
+        table_settings = TableFinder.resolve_table_settings(table_settings)
+        tables = self.find_tables(table_settings)
+
+        if len(tables) == 0:
+            return None
+
+        # Return the largest table, as measured by number of cells.
+        def sorter(x):
+            return (-len(x.cells), x.bbox[1], x.bbox[0])
+
+        largest = list(sorted(tables, key=sorter))[0]
+
+        extract_kwargs = dict(
+            (k, table_settings["text_" + k])
+            for k in ["x_tolerance", "y_tolerance"]
+            if "text_" + k in table_settings
+        )
+
+        return largest.extract_complex(**extract_kwargs)
+
+
     def extract_tables(self, table_settings={}):
         table_settings = TableFinder.resolve_table_settings(table_settings)
         tables = self.find_tables(table_settings)
